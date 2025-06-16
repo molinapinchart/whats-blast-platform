@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Plus, Save, Eye, Trash2, Edit } from "lucide-react";
+import { MessageSquare, Plus, Save, Eye, Trash2, Edit, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Template {
@@ -34,7 +34,8 @@ const TemplateComposer = () => {
     name: '',
     category: 'marketing',
     body: '',
-    variables: []
+    variables: [],
+    buttons: []
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -54,6 +55,34 @@ const TemplateComposer = () => {
     
     const allVars = [...new Set([...bodyVars, ...headerVars, ...footerVars])];
     setCurrentTemplate(prev => ({ ...prev, variables: allVars }));
+  };
+
+  const addButton = () => {
+    const newButton = {
+      type: 'quick_reply' as const,
+      text: '',
+      value: ''
+    };
+    setCurrentTemplate(prev => ({
+      ...prev,
+      buttons: [...(prev.buttons || []), newButton]
+    }));
+  };
+
+  const updateButton = (index: number, field: string, value: string) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      buttons: prev.buttons?.map((button, i) => 
+        i === index ? { ...button, [field]: value } : button
+      ) || []
+    }));
+  };
+
+  const removeButton = (index: number) => {
+    setCurrentTemplate(prev => ({
+      ...prev,
+      buttons: prev.buttons?.filter((_, i) => i !== index) || []
+    }));
   };
 
   const saveTemplate = () => {
@@ -88,7 +117,8 @@ const TemplateComposer = () => {
       name: '',
       category: 'marketing',
       body: '',
-      variables: []
+      variables: [],
+      buttons: []
     });
 
     toast({
@@ -159,7 +189,7 @@ const TemplateComposer = () => {
                 key={index}
                 className="bg-white/20 text-center py-2 rounded text-sm font-medium"
               >
-                {button.text}
+                {button.text || 'Button Text'}
               </div>
             ))}
           </div>
@@ -260,6 +290,74 @@ const TemplateComposer = () => {
               />
             </div>
 
+            {/* Buttons Configuration */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-slate-300">Buttons (Optional)</Label>
+                <Button
+                  onClick={addButton}
+                  size="sm"
+                  variant="outline"
+                  className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Button
+                </Button>
+              </div>
+              
+              {currentTemplate.buttons && currentTemplate.buttons.length > 0 && (
+                <div className="space-y-3">
+                  {currentTemplate.buttons.map((button, index) => (
+                    <div key={index} className="p-3 bg-slate-750 rounded-lg border border-slate-600">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-slate-300 text-sm">Button {index + 1}</Label>
+                        <Button
+                          onClick={() => removeButton(index)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-400 hover:text-red-300 h-6 w-6 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-2">
+                        <Select
+                          value={button.type}
+                          onValueChange={(value) => updateButton(index, 'type', value)}
+                        >
+                          <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="quick_reply">Quick Reply</SelectItem>
+                            <SelectItem value="url">URL</SelectItem>
+                            <SelectItem value="phone_number">Phone Number</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Input
+                          value={button.text}
+                          onChange={(e) => updateButton(index, 'text', e.target.value)}
+                          className="bg-slate-700 border-slate-600 text-white"
+                          placeholder="Button text"
+                        />
+                        
+                        {button.type !== 'quick_reply' && (
+                          <Input
+                            value={button.value}
+                            onChange={(e) => updateButton(index, 'value', e.target.value)}
+                            className="bg-slate-700 border-slate-600 text-white"
+                            placeholder={button.type === 'url' ? 'https://example.com' : '+1234567890'}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Variables */}
             {currentTemplate.variables && currentTemplate.variables.length > 0 && (
               <div>
@@ -346,6 +444,11 @@ const TemplateComposer = () => {
                           {template.variables.length > 0 && (
                             <Badge variant="outline" className="text-xs bg-blue-500/20 text-blue-300">
                               {template.variables.length} variables
+                            </Badge>
+                          )}
+                          {template.buttons && template.buttons.length > 0 && (
+                            <Badge variant="outline" className="text-xs bg-green-500/20 text-green-300">
+                              {template.buttons.length} buttons
                             </Badge>
                           )}
                         </div>
